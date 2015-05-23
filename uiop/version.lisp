@@ -95,24 +95,21 @@ and return it as a string."
       ((nil) nil)
       ((:style-warning) (style-warn 'obsolete-function-style-warning :name name))
       ((:warning) (warn 'obsolete-function-warning :name name))
-      ((:cerror) (cerror "USE FUNCTION ANYWAY" 'obsolete-function-error :name name))
-      ((:error) (error 'obsolete-function-error :name name))))
+      ((:error) (cerror "USE FUNCTION ANYWAY" 'obsolete-function-error :name name))))
 
   (defun version-obsolete-status (version &key (style-warning nil)
                                             (warning (next-version style-warning))
-                                            (cerror (next-version warning))
-                                            (error (next-version cerror))
+                                            (error (next-version warning))
                                             (delete (next-version error)))
     (cond
       ((version<= delete version) :delete)
       ((version<= error version) :error)
-      ((version<= cerror version) :cerror)
       ((version<= warning version) :warning)
       ((version<= style-warning version) :style-warning)))
 
   (defmacro with-obsolete-status ((status) &body definitions)
     (let ((status (eval status)))
-      (check-type status (member nil :style-warning :warning :cerror :error :delete))
+      (check-type status (member nil :style-warning :warning :error :delete))
       (when (eq status :delete)
         (error "Function~P ~{~S~^ ~} should have been deleted"
                (length definitions) (mapcar 'second definitions)))

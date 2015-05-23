@@ -27,13 +27,12 @@ It is transcluded into asdf.lisp together with ASDF/DEFSYSTEM, so if you did (re
 you already have a matching UIOP loaded."
   :author "Francois-Rene Rideau"
   :licence "MIT"
-  :class #.(if (find-class 'package-system nil) 'package-system 'system)
+  :class #+asdf3.1 package-system #-asdf3.1 system
   #+asdf3.1 :version #+asdf3.1 (:read-file-form "version.lisp" :at (2 2 2))
-  #+asdf-unicode :encoding #+asdf-unicode :utf-8
+  #+asdf3 :encoding #+asdf3 :utf-8
   #+asdf3 :around-compile #+asdf3 call-without-redefinition-warnings
   :components
-  ((:static-file "version.lisp-expr")
-   (:static-file "contrib/debug.lisp")
+  ((:static-file "contrib/debug.lisp")
    (:file "package")
    (:file "common-lisp" :depends-on ("package"))
    (:file "utility" :depends-on ("common-lisp"))
