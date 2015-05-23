@@ -10,6 +10,7 @@
    #:asdf-message #:*verbose-out*
    #:upgrading-p #:when-upgrading #:upgrade-asdf #:defparameter*
    #:*post-upgrade-cleanup-hook* #:cleanup-upgraded-asdf
+   #:with-obsolete-asdf-code
    ;; There will be no symbol left behind!
    #:intern*)
   (:import-from :uiop/package #:intern* #:find-symbol*))
@@ -152,4 +153,9 @@ previously-loaded version of ASDF."
     (let ((*load-print* nil)
           (*compile-print* nil))
       (handler-bind (((or style-warning) #'muffle-warning))
-        (symbol-call :asdf :load-system :asdf :verbose nil)))))
+        (symbol-call :asdf :load-system :asdf :verbose nil))))
+
+  (defmacro with-obsolete-asdf-code ((&rest keys &key &allow-other-keys) &body body)
+    `(with-upgradability ()
+       (with-obsolete-status ((version-obsolete-status *asdf-version* ,@keys))
+         ,@body))))

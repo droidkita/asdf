@@ -453,3 +453,5 @@ It looks like SWANK can be fixed soon, though, so we'll see.
    but instead store the name of these directories,
    so these files will be read recursively by asdf, allowing for
    semi-modular updates.
+
+* Get lisa, readable, bourbaki to NOT include ASDF 1 anymore in their sources.
