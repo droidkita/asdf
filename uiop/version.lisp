@@ -101,23 +101,33 @@ and return it as a string."
                                             (warning (next-version style-warning))
                                             (error (next-version warning))
                                             (delete (next-version error)))
+    "Given a VERSION string, and the starting versions for notifying the programmer of
+various levels of deprecation, return the current level of deprecation as per WITH-DEPRECATION
+that is the highest level that has a declared version older than the specified version.
+Each start version for a level of deprecation can be specified by a keyword argument, or
+if left unspecified, will be the NEXT-VERSION of the immediate lower level of deprecation."
     (cond
       ((version<= delete version) :delete)
       ((version<= error version) :error)
       ((version<= warning version) :warning)
       ((version<= style-warning version) :style-warning)))
 
-  (defmacro with-deprecation ((status) &body definitions)
-    (let ((status (eval status)))
-      (check-type status (member nil :style-warning :warning :error :delete))
-      (when (eq status :delete)
+  (defmacro with-deprecation ((level) &body definitions)
+    "Given a deprecation LEVEL, modify the function DEFINITIONS to notify the programmer
+of the deprecation of the function when it is compiled or called. Increasing levels are:
+NIL (not deprecated yet), :STYLE-WARNING (a style warning is issued when used), :WARNING (a
+full warning is issued when used), :ERROR (a continuable error instead), and :DELETE (it's an error
+if the code is still there while at that level)."
+    (let ((level (eval level)))
+      (check-type level (member nil :style-warning :warning :error :delete))
+      (when (eq level :delete)
         (error "Function~P ~{~S~^ ~} should have been deleted"
                (length definitions) (mapcar 'second definitions)))
       (labels ((instrument (name head body whole)
-                 (if status
+                 (if level
                      (let ((notifiedp
                             (intern (format nil "*~A-~A-~A-~A*"
-                                            :deprecated-function status name :notified-p))))
+                                            :deprecated-function level name :notified-p))))
                        (multiple-value-bind (remaining-forms declarations doc-string)
                            (parse-body body :documentation t :whole whole)
                          `(progn
@@ -126,12 +136,12 @@ and return it as a string."
                             (declaim (inline ,name))
                             (define-compiler-macro ,name (&whole form &rest args)
                               (declare (ignore args))
-                              (notify-deprecated-function ,status ',name)
+                              (notify-deprecated-function ,level ',name)
                               form)
                             (,@head ,@(when doc-string (list doc-string)) ,@declarations
                                     (unless ,notifiedp
                                       (setf ,notifiedp t)
-                                      (notify-deprecated-function ,status ',name))
+                                      (notify-deprecated-function ,level ',name))
                                     ,@remaining-forms))))
                      `(progn
                         (eval-when (:compile-toplevel :load-toplevel :execute)
