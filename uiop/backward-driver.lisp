@@ -1,4 +1,4 @@
-;;;; -------------------------------------------------------------------------
+;;; -------------------------------------------------------------------------
 ;;; Hacks for backward-compatibility with older versions of UIOP
 
 (uiop/package:define-package :uiop/backward-driver
@@ -14,9 +14,8 @@
 (in-package :uiop/backward-driver)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-(with-obsolete-status ((version-obsolete-status
+(with-deprecation ((version-obsolete-status
                         *uiop-version* :style-warning "3.1.8" :warning "3.1.9"))
-
   ;; Backward compatibility with ASDF 2.000 to 2.26
 
   ;; For backward-compatibility only, for people using internals

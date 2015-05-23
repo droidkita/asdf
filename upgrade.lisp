@@ -155,7 +155,7 @@ previously-loaded version of ASDF."
       (handler-bind (((or style-warning) #'muffle-warning))
         (symbol-call :asdf :load-system :asdf :verbose nil))))
 
-  (defmacro with-obsolete-asdf-code ((&rest keys &key &allow-other-keys) &body body)
+  (defmacro with-asdf-deprecation ((&rest keys &key &allow-other-keys) &body body)
     `(with-upgradability ()
-       (with-obsolete-status ((version-obsolete-status *asdf-version* ,@keys))
+       (with-deprecation ((version-obsolete-status *asdf-version* ,@keys))
          ,@body))))

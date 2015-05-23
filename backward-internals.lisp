@@ -7,7 +7,7 @@
   (:export #:load-sysdef))
 (in-package :asdf/backward-internals)
 
-(with-obsolete-asdf-code (:style-warning "3.1.8" :warning "3.1.9")
+(with-asdf-deprecation (:style-warning "3.1.8" :warning "3.1.9")
   (defun load-sysdef (name pathname)
     (declare (ignore name pathname))
     ;; Needed for backward compatibility with swank-asdf from SLIME 2015-12-01 or older.

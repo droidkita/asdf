@@ -3,9 +3,9 @@
   (:use :uiop/common-lisp :uiop/package :uiop/utility)
   (:export
    #:*uiop-version*
-   #:parse-version #:unparse-version #:version< #:version<= ;; version support, initially in uiop/utility
+   #:parse-version #:unparse-version #:version< #:version<= ;; version support, moved from uiop/utility
    #:next-version
-   #:version-obsolete-status #:with-obsolete-status)) ;; obsolescence control
+   #:version-deprecation #:with-deprecation)) ;; obsolescence control
 (in-package :uiop/version)
 
 (with-upgradability ()
@@ -62,19 +62,19 @@ and return it as a string."
 
 
 (with-upgradability ()
-  (define-condition obsolete-function-condition (condition)
+  (define-condition deprecated-function-condition (condition)
     ((name :initarg :name :reader function-name)))
-  (define-condition obsolete-function-style-warning (obsolete-function-condition style-warning) ())
-  (define-condition obsolete-function-warning (obsolete-function-condition warning) ())
-  (define-condition obsolete-function-error (obsolete-function-condition error) ())
+  (define-condition deprecated-function-style-warning (deprecated-function-condition style-warning) ())
+  (define-condition deprecated-function-warning (deprecated-function-condition warning) ())
+  (define-condition deprecated-function-error (deprecated-function-condition error) ())
 
-  (defun obsolete-function-condition-kind (type)
+  (defun deprecated-function-condition-kind (type)
     (ecase type
-      ((obsolete-function-style-warning) :style-warning)
-      ((obsolete-function-warning) :warning)
-      ((obsolete-function-error) :error)))
+      ((deprecated-function-style-warning) :style-warning)
+      ((deprecated-function-warning) :warning)
+      ((deprecated-function-error) :error)))
 
-  (defmethod print-object ((c obsolete-function-condition) stream)
+  (defmethod print-object ((c deprecated-function-condition) stream)
     (let ((name (function-name c)))
       (cond
         (*print-readably*
@@ -87,17 +87,17 @@ and return it as a string."
          (print-unreadable-object (c stream :type t) (format stream ":name ~S" name)))
         (t
          (let ((*package* (find-package :cl)))
-           (format stream "~A: Using obsolete function ~S -- please update your code to use a newer API"
-                   (obsolete-function-condition-kind (type-of c)) name))))))
+           (format stream "~A: Using deprecated function ~S -- please update your code to use a newer API"
+                   (deprecated-function-condition-kind (type-of c)) name))))))
 
-  (defun notify-obsolete-function (status name)
+  (defun notify-deprecated-function (status name)
     (ecase status
       ((nil) nil)
-      ((:style-warning) (style-warn 'obsolete-function-style-warning :name name))
-      ((:warning) (warn 'obsolete-function-warning :name name))
-      ((:error) (cerror "USE FUNCTION ANYWAY" 'obsolete-function-error :name name))))
+      ((:style-warning) (style-warn 'deprecated-function-style-warning :name name))
+      ((:warning) (warn 'deprecated-function-warning :name name))
+      ((:error) (cerror "USE FUNCTION ANYWAY" 'deprecated-function-error :name name))))
 
-  (defun version-obsolete-status (version &key (style-warning nil)
+  (defun version-deprecation (version &key (style-warning nil)
                                             (warning (next-version style-warning))
                                             (error (next-version warning))
                                             (delete (next-version error)))
@@ -107,7 +107,7 @@ and return it as a string."
       ((version<= warning version) :warning)
       ((version<= style-warning version) :style-warning)))
 
-  (defmacro with-obsolete-status ((status) &body definitions)
+  (defmacro with-deprecation ((status) &body definitions)
     (let ((status (eval status)))
       (check-type status (member nil :style-warning :warning :error :delete))
       (when (eq status :delete)
@@ -117,7 +117,7 @@ and return it as a string."
                  (if status
                      (let ((notifiedp
                             (intern (format nil "*~A-~A-~A-~A*"
-                                            :obsolete-function status name :notified-p))))
+                                            :deprecated-function status name :notified-p))))
                        (multiple-value-bind (remaining-forms declarations doc-string)
                            (parse-body body :documentation t :whole whole)
                          `(progn
@@ -126,12 +126,12 @@ and return it as a string."
                             (declaim (inline ,name))
                             (define-compiler-macro ,name (&whole form &rest args)
                               (declare (ignore args))
-                              (notify-obsolete-function ,status ',name)
+                              (notify-deprecated-function ,status ',name)
                               form)
                             (,@head ,@(when doc-string (list doc-string)) ,@declarations
                                     (unless ,notifiedp
                                       (setf ,notifiedp t)
-                                      (notify-obsolete-function ,status ',name))
+                                      (notify-deprecated-function ,status ',name))
                                     ,@remaining-forms))))
                      `(progn
                         (eval-when (:compile-toplevel :load-toplevel :execute)

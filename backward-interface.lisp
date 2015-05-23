@@ -21,7 +21,8 @@
 
 ;; NB: the warning status of these functions may have to be distinguished later,
 ;; as some get removed faster than the others in client code.
-(with-obsolete-asdf-code (:style-warning "3.1.8" :warning "3.1.9")
+
+(with-asdf-deprecation (:style-warning "3.1.8" :warning "3.1.9")
 
   ;; These conditions from ASDF 1 and 2 are used by many packages in Quicklisp;
   ;; but ASDF3 replaced them with somewhat different variants of uiop:compile-condition
