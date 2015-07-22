@@ -249,15 +249,19 @@ The class needs to be updated for ASDF 3.1 and specify appropriate propagation m
              :format-arguments
              (list (type-of o)))))
 
-  (defmethod component-depends-on ((o operation) (c component))
-    `(;; Normal behavior, to allow user-specified in-order-to dependencies
-      ,@(cdr (assoc (type-of o) (component-in-order-to c)))
-      ;; For backward-compatibility with ASDF2, any operation that doesn't specify propagation
-      ;; or non-propagation through an appropriate mixin will be downward and sideway.
-      ,@(unless (typep o '(or downward-operation upward-operation sideway-operation
-                              selfward-operation non-propagating-operation))
-          `(,@(sideway-operation-depends-on o c)
-            ,@(when (typep c 'parent-component) (downward-operation-depends-on o c))))))
+  (with-asdf-deprecation (:style-warning "3.1.8")
+    (defun backward-compatible-depends-on (o c)
+      `(,@(sideway-operation-depends-on o c)
+        ,@(when (typep c 'parent-component) (downward-operation-depends-on o c))))
+    (progn
+      (defmethod component-depends-on ((o operation) (c component))
+        `(;; Normal behavior, to allow user-specified in-order-to dependencies
+          ,@(cdr (assoc (type-of o) (component-in-order-to c)))
+          ;; For backward-compatibility with ASDF2, any operation that doesn't specify propagation
+          ;; or non-propagation through an appropriate mixin will be downward and sideway.
+          ,@(unless (typep o '(or downward-operation upward-operation sideway-operation
+                               selfward-operation non-propagating-operation))
+              (backward-compatible-depends-on o c))))))
 
   (defmethod downward-operation ((o operation)) nil)
   (defmethod sideway-operation ((o operation)) nil))
