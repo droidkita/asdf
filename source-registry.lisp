@@ -278,7 +278,9 @@ after having found a .asd file? True by default.")
 
   ;; Will read the configuration and initialize all internal variables.
   (defun compute-source-registry (&optional parameter (registry *source-registry*))
+    (format t "Before DOLIST, PARAMETER is: ~S~%" parameter)
     (dolist (entry (flatten-source-registry parameter))
+      (format t "In DOLIST, ENTRY is: ~S~%" parameter)
       (destructuring-bind (directory &key recurse exclude) entry
         (let* ((h (make-hash-table :test 'equal))) ; table to detect duplicates
           (register-asd-directory
