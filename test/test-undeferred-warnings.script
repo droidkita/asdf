@@ -6,6 +6,9 @@
 ;;; ---------------------------------------------------------------------------
 
 (in-package :asdf-test)
+(uiop:uiop-debug)
+
+(disable-deferred-warnings-check)
 
 (def-test-system :undefined-variables
   :components ((:file "fun-with-undefined-locals")))
@@ -22,19 +25,21 @@
 
 ;; GCL fails to warn; CMUCL, SBCL and presumably SCL defer warning to end of compilation unit;
 ;; SCL and XCL not actually tested
-
+(DBG "Check for proper errors on warning.")
 (errors #+(or abcl allegro clisp clozure (and ecl (not ecl-bytecmp)) lispworks mkcl xcl) compile-file-error
         #+(or cmu (and ecl ecl-bytecmp) gcl sbcl scl) null
         (let ((*compile-file-warnings-behaviour* :error))
-          (load-system :undefined-variables)))
+          (load-system :undefined-variables :force t)))
+(DBG "Check for proper warnings on warning.")
 (errors #+(or abcl allegro clisp clozure (and ecl (not ecl-bytecmp)) lispworks mkcl xcl) compile-file-error
         #+(or cmu (and ecl ecl-bytecmp) gcl sbcl scl) null
         (let ((*compile-file-warnings-behaviour* :warning))
           (load-system :undefined-variables :force t)))
+(DBG "check for undefined variable warnings to not fail a build.")
 (assert
  (let ((*compile-file-warnings-behaviour* :ignore))
    (load-system :undefined-variables :force t)))
-
+(DBG "check for undefined variable-warnings throttled by PERFORM around method not failing a build.")
 (assert
  (let ((*compile-file-warnings-behaviour* :error))
    (asdf:load-system :undefined-variables-throttled :force t)))
