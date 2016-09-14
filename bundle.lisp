@@ -552,10 +552,7 @@ for all the linkable object files associated with the system or its dependencies
 		 (unless (has-it-p x)
 		   (list
 		    (if (and (system-source-directory x)
-			     #+mkcl ;; avoid bug in mkcl 1.1.10
-			     (let ((s (find-system x)))
-			       (or (not (typep s 'prebuilt-system))
-				   (file-exists-p (prebuilt-system-static-library s)))))
+			     )
 			(find-system x)
 			(make-library-system x))))))
         `((,lib-op
