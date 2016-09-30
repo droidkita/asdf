@@ -36,7 +36,7 @@
   (leave-test
    "This test is not meant to be run on versions of MKCL that predate 1.1.10" 0))
 
-#-(or abcl allegro clasp clisp clozure cmucl ecl lispworks mkcl sbcl)
+#-(or abcl allegro clasp clozure cmucl ecl lispworks mkcl sbcl)
 (leave-test "This test has never been run on your lisp and would probably fail" 0)
 
 ;;; Helpers
@@ -186,18 +186,6 @@
   (with-open-file (output name :direction :output :if-exists :supersede)
     (format output string)))
 
-;; Wrapper that keeps us from special-casing CLISP since it
-;; always requires :error-output :interactive to be set.
-(defun %launch-program (command &rest named-pairs
-                     &key (error-output nil error-output-set)
-                       &allow-other-keys)
-  (declare (ignore error-output #-clisp error-output-set))
-  (let ((args (append (list command)
-                      named-pairs
-                      #+clisp (unless error-output-set
-                                (list :error-output :interactive)))))
-    (apply #'uiop:launch-program args)))
-
 ;; Skips the test if terminate-process cannot be called
 (defun my-terminate-process (&rest rest)
   #+ecl (unless (find-symbol* '#:terminate-process :ext nil)
@@ -206,29 +194,29 @@
 
 ;;; The actual tests
 
-(new-test-suite "%launch-program")
+(new-test-suite "run-program")
 
 (define-test
     ":input/:output/:error-output nil (default)"
-    (%launch-program (format nil "./exiter.sh 0 ~a" output-string)
-                  :wait nil :input nil :output nil))
+    (run-program (format nil "./exiter.sh 0 ~a" output-string)
+                 :input nil :output nil))
 
 (define-test
     ":error-output :interactive"
-    (%launch-program (format nil "./exiter.sh 0 ~a" output-string)
-                  :wait t :error-output :interactive))
+    (run-program (format nil "./exiter.sh 0 ~a" output-string)
+                 :error-output :interactive))
 
 (define-test
     ":error-output :output"
-    (%launch-program (format nil "./exiter.sh 0 ~a" output-string)
-                  :wait t :error-output :output))
+    (run-program (format nil "./exiter.sh 0 ~a" output-string)
+                 :error-output :output))
 
 (define-test
     ":output <file> (file e.)"
     (progn
       (create-file-from-string *output-file* "")
-      (%launch-program (format nil "./exiter.sh 0 ~a" output-string)
-                    :wait t :output *output-file*)
+      (run-program (format nil "./exiter.sh 0 ~a" output-string)
+                   :output *output-file*)
       (check-output (format nil "~a~%" output-string))))
 
 (define-test
@@ -236,10 +224,10 @@
     (progn
       (create-file-from-string *output-file* "")
       (create-file-from-string *error-output-file* "")
-      (%launch-program (format nil "./exiter.sh 0 ~a ~a"
+      (run-program (format nil "./exiter.sh 0 ~a ~a"
                             output-string error-string)
-                    :wait t :output *output-file*
-                    :error-output *error-output-file*)
+                   :output *output-file*
+                   :error-output *error-output-file*)
       (check-output (format nil "~a~%" output-string))
       (check-error-output (format nil "~a~%" error-string))))
 
@@ -247,24 +235,24 @@
     ":input <file> (file m.)"
     (progn
       (delete-file-if-exists *input-file*)
-      (%launch-program "cat" :wait t :input *input-file*
-                    :if-input-does-not-exist :create)))
+      (run-program "cat" :input *input-file*
+                   :if-input-does-not-exist :create)))
 
 (define-test
     ":input <file> (file e.)"
   (progn
     (let ((in-string (format nil "A line.~%And another.~%")))
       (create-file-from-string *input-file* in-string))
-    (%launch-program "cat" :wait t :input *input-file*
-                  :if-input-does-not-exist :create)))
+    (run-program "cat" :input *input-file*
+                 :if-input-does-not-exist :create)))
 
 (define-test
     ":input <file> (as pathname; file e.)"
   (progn
     (let ((in-string (format nil "A line.~%And another.~%")))
       (create-file-from-string *input-file* in-string))
-    (%launch-program "cat" :wait t :input (truename *input-file*)
-                  :if-input-does-not-exist :create)))
+    (run-program "cat" :input (truename *input-file*)
+                 :if-input-does-not-exist :create)))
 
 (define-test
     ":input <file> :output <file> (files e.)"
@@ -272,7 +260,7 @@
     (let ((in-string (format nil "A line.~%And another.~%")))
       (create-file-from-string *input-file* in-string)
       (create-file-from-string *output-file* "")
-      (%launch-program "cat" :wait t :input *input-file* :output *output-file*)
+      (run-program "cat" :input *input-file* :output *output-file*)
       (check-output in-string))))
 
 (define-test
@@ -281,8 +269,8 @@
     (let ((in-string (format nil "A line.~%And another.~%")))
       (create-file-from-string *input-file* in-string)
       (delete-file-if-exists *output-file*)
-      (%launch-program "cat" :wait t :input *input-file*
-                    :output *output-file*)
+      (run-program "cat" :input *input-file*
+                   :output *output-file*)
       (check-output in-string))))
 
 (define-test
@@ -292,12 +280,12 @@
           (in-string2 (format nil "And another.~%")))
       (delete-file-if-exists *output-file*)
       (create-file-from-string *input-file* in-string1)
-      (%launch-program "cat" :wait t :input *input-file*
-                    :output *output-file*)
+      (run-program "cat" :input *input-file*
+                   :output *output-file*)
       (create-file-from-string *input-file* in-string2)
-      (%launch-program "cat" :wait t :input *input-file*
-                    :output *output-file*
-                    :if-output-exists :append)
+      (run-program "cat" :input *input-file*
+                   :output *output-file*
+                   :if-output-exists :append)
       (check-output (concatenate 'string in-string1 in-string2)))))
 
 (define-test
@@ -309,9 +297,9 @@
       (with-open-file (error-output *error-output-file* :direction :output
                                     :if-exists :supersede
                                     #+clozure :sharing #+clozure :lock)
-        (%launch-program (format nil "./exiter.sh 0 ~a ~a"
+        (run-program (format nil "./exiter.sh 0 ~a ~a"
                               output-string error-string)
-                      :wait t :output output :error-output error-output)))
+                     :output output :error-output error-output)))
     (check-output (format nil "~a~%" output-string))
     (check-error-output (format nil "~a~%" error-string))))
 
@@ -320,7 +308,7 @@
   (let ((in-string (format nil "A line.~%And another.~%")))
     (create-file-from-string *input-file* in-string)
     (with-output-to-string (out-stream)
-      (%launch-program "cat" :wait t :input *input-file* :output out-stream)
+      (run-program "cat" :input *input-file* :output out-stream)
       (check-strings in-string (get-output-stream-string out-stream)))))
 
 (define-test
@@ -328,7 +316,7 @@
   (let ((in-string (format nil "A line.~%And another.~%")))
     (with-output-to-string (out-stream nil)
       (with-input-from-string (in-stream in-string)
-        (%launch-program "cat" :wait t :input in-stream :output out-stream))
+        (run-program "cat" :input in-stream :output out-stream))
       (check-strings in-string (get-output-stream-string out-stream)))))
 
 (define-test
@@ -337,8 +325,8 @@
     (with-open-file (input *input-file* :direction :output
                            :if-exists :supersede)
       (format input in-string))
-    (let* ((process (%launch-program "cat" :wait t :input *input-file*
-                                  :output :stream))
+    (let* ((process (launch-program "cat" :input *input-file*
+                                    :output :stream))
            (output (process-info-output process))
            (out-string (make-string (length in-string))))
       (read-sequence out-string output)
@@ -346,13 +334,13 @@
       (close-streams process))))
 
 (define-test
-    ":input <file> :output :stream :wait nil"
+    ":input <file> :output :stream"
     (let ((in-string (format nil "A line.~%And another.~%")))
       (with-open-file (input *input-file* :direction :output
                              :if-exists :supersede)
         (format input in-string))
-      (let* ((process (%launch-program "cat" :wait nil :input *input-file*
-                                    :output :stream))
+      (let* ((process (launch-program "cat" :input *input-file*
+                                      :output :stream))
              (output (process-info-output process))
              (out-string (make-string (length in-string))))
         (wait-process process)
@@ -373,7 +361,7 @@
                            :if-does-not-exist :error)
       (let* ((*dynamic-input* input)
              (input-synonym (make-synonym-stream '*dynamic-input*)))
-        (%launch-program "cat" :wait t
+        (run-program "cat"
                       :input input-synonym
                       :output *output-file*))
       (check-output in-string))))
@@ -386,7 +374,7 @@
       (with-input-from-string (input in-string)
         (let* ((*dynamic-input* input)
                (input-synonym (make-synonym-stream '*dynamic-input*)))
-          (%launch-program "cat" :wait t
+          (run-program "cat"
                         :input input-synonym
                         :output *output-file*)))
       (check-output in-string))))
@@ -405,15 +393,15 @@
       (create-file-from-string temporary-file in-string)
 
       (delete-file-if-exists *output-file*)
-      (%launch-program (format nil "cat ~a" relative-filename)
-                    :wait t :output *output-file* :directory temporary-directory)
+      (run-program (format nil "cat ~a" relative-filename)
+                    :output *output-file* :directory temporary-directory)
       (check-output in-string)))
 
 (new-test-suite "process-info-pid")
 
 (define-test
     "basic functionality"
-    (let* ((process-info (%launch-program "./sleeper.sh 12 1" :wait nil))
+    (let* ((process-info (launch-program "./sleeper.sh 12 1"))
            (pid (process-info-pid process-info)))
       (handle-result "obtainable and plausible?"
                      (and (numberp pid) (plusp pid)))
@@ -422,36 +410,31 @@
 (new-test-suite "wait-process")
 
 (define-test
-    "exit code after exit: synchronous (repeated)"
-    (let ((process-info (%launch-program "./exiter.sh 12" :wait t)))
-      (handle-result "exit code matches?"
-                     (equal 12 (wait-process process-info)))
-      (handle-result "exit code matches? (no. 2)"
-                     (equal 12 (wait-process process-info)))))
+    "exit code after exit: synchronous"
+    (handle-result "exit code matches?"
+                   (equal 12 (nth-value 2 (run-program "./exiter.sh 12" :ignore-error-status t)))))
 
 (define-test
     "exit code after exit: asynchronous (repeated)"
-  (let ((process-info (%launch-program "./sleeper.sh 12 1" :wait nil)))
+  (let ((process-info (launch-program "./sleeper.sh 12 1")))
     (handle-result "exit code matches?"
                    (equal 12 (wait-process process-info)))
     (handle-result "exit code matches? (no. 2)"
                    (equal 12 (wait-process process-info)))))
 
 (define-test
-    "exit code after signal: synchronous (repeated)"
+    "exit code after signal: synchronous"
     #+(and lispworks (not lispworks7+))
     (skip-test "Known to fail")
-    (let ((process-info (%launch-program "./killer.sh" :wait t)))
-      (handle-result "exit code matches?"
-                     (equal (+ 128 15) (wait-process process-info)))
-      (handle-result "exit code matches? (no. 2)"
-                     (equal (+ 128 15) (wait-process process-info)))))
+    (handle-result "exit code matches?"
+                   (equal (+ 128 15)
+                          (nth-value 2 (run-program "./killer.sh" :ignore-error-status t)))))
 
 (define-test
     "exit code after signal: asynchronous (repeated)"
     #+(and lispworks (not lispworks7+))
     (skip-test "Known to fail")
-    (let ((process-info (%launch-program "./killer.sh" :wait nil)))
+    (let ((process-info (launch-program "./killer.sh")))
       (handle-result "exit code matches?"
                      (equal (+ 128 15) (wait-process process-info)))
       (handle-result "exit code matches? (no. 2)"
@@ -461,7 +444,7 @@
 
 (define-test
     "not alive (we slept)"
-    (let ((process-info (%launch-program "./sleeper.sh 12 1" :wait nil)))
+    (let ((process-info (launch-program "./sleeper.sh 12 1")))
       (handle-result "alive?"
                      (process-alive-p process-info))
       (sleep 2)
@@ -472,7 +455,7 @@
 
 (define-test
     "not alive (we waited)"
-    (let ((process-info (%launch-program "./sleeper.sh 12 1" :wait nil)))
+    (let ((process-info (launch-program "./sleeper.sh 12 1")))
       (handle-result "alive?"
                      (process-alive-p process-info))
       (wait-process process-info)
@@ -482,7 +465,7 @@
 
 (define-test
     "not alive (we terminated it)"
-    (let ((process-info (%launch-program "./sleeper.sh 12 2" :wait nil)))
+    (let ((process-info (launch-program "./sleeper.sh 12 2")))
       (handle-result "alive?"
                      (process-alive-p process-info))
       (my-terminate-process process-info :urgent t)
@@ -493,7 +476,7 @@
 
 (define-test
     "not alive (we terminated it repeatedly)"
-    (let ((process-info (%launch-program "./sleeper.sh 12 3" :wait nil)))
+    (let ((process-info (launch-program "./sleeper.sh 12 3")))
       (handle-result "alive?"
                      (process-alive-p process-info))
       (my-terminate-process process-info :urgent t)
@@ -506,8 +489,8 @@
 
 (define-test
     "multiple processes: proper exit sequence"
-    (let ((process-info1 (%launch-program "./sleeper.sh 12 1" :wait nil))
-          (process-info2 (%launch-program "./sleeper.sh 12 2" :wait nil)))
+    (let ((process-info1 (launch-program "./sleeper.sh 12 1"))
+          (process-info2 (launch-program "./sleeper.sh 12 2")))
       (handle-result "#1 alive?"
                      (process-alive-p process-info1))
       (handle-result "#2 alive?"
@@ -530,7 +513,7 @@
 
 (define-test
     ":exited (we slept; repeated query)"
-    (let* ((process-info (%launch-program "./sleeper.sh 12 1" :wait nil))
+    (let* ((process-info (launch-program "./sleeper.sh 12 1"))
            (status (uiop/run-program::%process-status process-info)))
       (handle-result "running?" (equal :running status))
       (sleep 2)
@@ -548,7 +531,7 @@
     ":exited/:signaled (it killed itself; repeated query)"
     #+(and lispworks (not lispworks7+))
     (skip-test "Known to fail")
-    (let* ((process-info (%launch-program "./killer.sh" :wait nil)))
+    (let* ((process-info (launch-program "./killer.sh")))
       (sleep 1)
       (multiple-value-bind (status code)
           (uiop/run-program::%process-status process-info)
@@ -568,7 +551,7 @@
 
 (define-test
     ":exited (it exited >128; repeated query)"
-    (let* ((process-info (%launch-program "./killercontainer.sh" :wait nil)))
+    (let* ((process-info (launch-program "./killercontainer.sh")))
       (sleep 1)
       (multiple-value-bind (status code)
           (uiop/run-program::%process-status process-info)
@@ -584,7 +567,7 @@
     ":signaled (we terminated it; repeated query)"
     #+(and lispworks (not lispworks7+))
     (skip-test "Known to fail")
-    (let* ((process-info (%launch-program "./sleeper.sh 12 2" :wait nil))
+    (let* ((process-info (launch-program "./sleeper.sh 12 2"))
            (status (uiop/run-program::%process-status process-info)))
       (handle-result "running?" (equal :running status))
       (my-terminate-process process-info :urgent t)
