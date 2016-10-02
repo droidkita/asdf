@@ -83,9 +83,8 @@ the action of OPERATION on COMPONENT in the PLAN"))
   (defmethod action-planned-p ((action-status t))
     t) ; default method for non planned-action-status objects
 
-  ;; TODO: either confirm there are no operation-original-initargs, eliminate NODE-FOR,
-  ;; and use (CONS O C); or keep the operation initargs, and here use MAKE-OPERATION.
-  ;; However, see also component-operation-time and mark-operation-done
+  ;; TODO: eliminate NODE-FOR and use CONS, after making sure everyone uses MAKE-OPERATION.
+  ;; However, see also COMPONENT-OPERATION-TIME and MARK-OPERATION-DONE.
   (defun node-for (o c)
     "Given operation O and component C, return an object to use as key in action-indexed tables."
     (cons (type-of o) c))

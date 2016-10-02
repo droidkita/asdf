@@ -33,7 +33,7 @@ and a class-name or class designates the canonical instance of the designated cl
     '(or operation null symbol class)))
 
 
-;;;; Reified representation for storage or debugging. Note: it drops the operation-original-initargs
+;;;; Reified representation for storage or debugging. Note: an action is identified by its class.
 (with-upgradability ()
   (defun action-path (action)
     "A readable data structure that identifies the action."
@@ -55,10 +55,8 @@ and a class-name or class designates the canonical instance of the designated cl
   ;; FORMALS is its list of arguments, which must include OPERATION and COMPONENT.
   ;; IF-NO-OPERATION is a form (defaults to NIL) describing what to do if no operation is found.
   ;; IF-NO-COMPONENT is a form (defaults to NIL) describing what to do if no component is found.
-  ;; If OPERATION-INITARGS is true, then for backward compatibility the function has
-  ;; a &rest argument that is passed into the operation's initargs if and when it is created.
   (defmacro define-convenience-action-methods
-      (function formals &key if-no-operation if-no-component operation-initargs)
+      (function formals &key if-no-operation if-no-component)
     (let* ((rest (gensym "REST"))
            (found (gensym "FOUND"))
            (keyp (equal (last formals) '(&key)))
@@ -83,9 +81,7 @@ and a class-name or class designates the canonical instance of the designated cl
            (defmethod ,function (,@prefix (,operation symbol) ,component ,@suffix ,@more-args)
              (if ,operation
                  ,(next-method
-                   (if operation-initargs ;backward-compatibility with ASDF1's operate. Yuck.
-                       `(apply 'make-operation ,operation :original-initargs ,rest ,rest)
-                       `(make-operation ,operation))
+                   `(make-operation ,operation)
                    `(or (find-component () ,component) ,if-no-component))
                  ,if-no-operation))
            (defmethod ,function (,@prefix (,operation operation) ,component ,@suffix ,@more-args)

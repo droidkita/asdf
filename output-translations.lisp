@@ -24,7 +24,7 @@
 
 ;; (setf output-translations) at some point used to be a macro for the sake of
 ;; obsolete versions of GCL. Make sure that macro doesn't come to haunt us.
-(when-upgrading () (undefine-function '(setf output-translations)))
+(when-upgrading (:version "2.33") (undefine-function '(setf output-translations)))
 
 (with-upgradability ()
   (define-condition invalid-output-translation (invalid-configuration warning)
